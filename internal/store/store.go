@@ -1,4 +1,4 @@
-package rune
+package store
 
 func (r *Rune) Set(key string, val []byte) {
 	r.mu.Lock()
@@ -11,4 +11,11 @@ func (r *Rune) Set(key string, val []byte) {
 
 func (r *Rune) Get(key string) []byte {
 	return r.data[key]
+}
+
+func (r *Rune) Delete(key string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	delete(r.data, key)
 }
