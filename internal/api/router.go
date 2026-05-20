@@ -16,8 +16,9 @@ func NewRouter(rune *store.Rune) http.Handler {
 
 	h := NewHandler(rune)
 
-	r.Put("/kv/{key}", h.Set)
-	r.Get("/kv/{key}", h.Get)
+	r.Put("/key/{key}", h.Set)
+	r.Get("/key/{key}", h.Get)
+	r.Delete("/key/{key}", h.Delete)
 
 	return r
 }
