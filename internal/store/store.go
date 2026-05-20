@@ -10,7 +10,17 @@ func (r *Rune) Set(key string, val []byte) {
 }
 
 func (r *Rune) Get(key string) []byte {
-	return r.data[key]
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	v, ok := r.data[key]
+	if !ok {
+		return nil
+	}
+
+	cp := make([]byte, len(v))
+	copy(cp, v)
+	return cp
 }
 
 func (r *Rune) Delete(key string) {
