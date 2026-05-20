@@ -3,7 +3,6 @@ package api
 import (
 	"io"
 	"net/http"
-	"unsafe"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/lucent1/rune/internal/store"
@@ -20,19 +19,28 @@ func NewHandler(rune *store.Rune) *Handler {
 }
 
 func (h *Handler) Set(w http.ResponseWriter, r *http.Request) {
+	const (
+		maxKeySize   = 256
+		maxValueSize = 1_000_000
+	)
+
 	key := chi.URLParam(r, "key")
-	if unsafe.Sizeof(key) > 256 {
-		http.Error(w, "Key size too big", http.StatusBadRequest)
+
+	if len(key) == 0 {
+		http.Error(w, "missing key", http.StatusBadRequest)
 		return
 	}
 
-	val, err := io.ReadAll(r.Body)
-	if err != nil || val == nil {
-		http.Error(w, "Failed to read body", http.StatusBadRequest)
+	if len(key) > maxKeySize {
+		http.Error(w, "Key size exceeds 256 bytes", http.StatusBadRequest)
 		return
 	}
-	if unsafe.Sizeof(val) > 1000000 {
-		http.Error(w, "Value size too big", http.StatusBadRequest)
+
+	r.Body = http.MaxBytesReader(w, r.Body, maxValueSize)
+
+	val, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "value too large or invalid body", http.StatusRequestEntityTooLarge)
 		return
 	}
 
@@ -43,6 +51,10 @@ func (h *Handler) Set(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	key := chi.URLParam(r, "key")
+	if len(key) > 256 {
+		http.Error(w, "Key size exceeds 256 bytes", http.StatusBadRequest)
+		return
+	}
 
 	val := h.rune.Get(key)
 	w.Write(val)
@@ -50,6 +62,10 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	key := chi.URLParam(r, "key")
+	if len(key) > 256 {
+		http.Error(w, "Key size exceeds 256 bytes", http.StatusBadRequest)
+		return
+	}
 
 	h.rune.Delete(key)
 	w.WriteHeader(http.StatusAccepted)
