@@ -1,12 +1,12 @@
 package store
 
 func (r *Rune) Set(key string, val []byte) {
+	cp := make([]byte, len(val))
+	copy(cp, val)
+
 	r.mu.Lock()
 	defer r.mu.Unlock()
-
-	var v []byte
-	copy(v, val)
-	r.data[key] = v
+	r.data[key] = cp
 }
 
 func (r *Rune) Get(key string) []byte {
