@@ -15,7 +15,7 @@ func (r *statusRecorder) WriteHeader(code int) {
 	r.ResponseWriter.WriteHeader(code)
 }
 
-func MiddleWare(next http.Handler) http.Handler {
+func (m *Metrics) MiddleWare(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 
@@ -26,17 +26,15 @@ func MiddleWare(next http.Handler) http.Handler {
 
 		next.ServeHTTP(rec, r)
 
-		duration := time.Since(start).Seconds()
-
-		RequestTotal.WithLabelValues(
+		m.RequestTotal.WithLabelValues(
 			r.Method,
 			r.URL.Path,
 			http.StatusText(rec.status),
 		).Inc()
 
-		RequestDuration.WithLabelValues(
+		m.RequestDuration.WithLabelValues(
 			r.Method,
 			r.URL.Path,
-		).Observe(duration)
+		).Observe(time.Since(start).Seconds())
 	})
 }

@@ -2,28 +2,35 @@ package metrics
 
 import "github.com/prometheus/client_golang/prometheus"
 
-var (
-	RequestTotal = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "http_requests_total",
-			Help: "Total number of http requests",
-		},
-		[]string{"method", "path", "status"},
-	)
+type Metrics struct {
+	RequestTotal    *prometheus.CounterVec
+	RequestDuration *prometheus.HistogramVec
+}
 
-	RequestDuration = prometheus.NewHistogramVec(
-		prometheus.HistogramOpts{
-			Name:    "http_request_duration_seconds",
-			Help:    "http request latecy",
-			Buckets: prometheus.DefBuckets,
-		},
-		[]string{"method", "path"},
-	)
-)
+func New() *Metrics {
+	m := &Metrics{
+		RequestTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "http_requests_total",
+				Help: "Total number of http requests",
+			},
+			[]string{"method", "path", "status"},
+		),
 
-func Init() {
+		RequestDuration: prometheus.NewHistogramVec(
+			prometheus.HistogramOpts{
+				Name:    "http_request_duration_seconds",
+				Help:    "http request latecy",
+				Buckets: prometheus.DefBuckets,
+			},
+			[]string{"method", "path"},
+		),
+	}
+
 	prometheus.MustRegister(
-		RequestTotal,
-		RequestDuration,
+		m.RequestTotal,
+		m.RequestDuration,
 	)
+
+	return m
 }

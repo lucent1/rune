@@ -13,11 +13,11 @@ import (
 func NewRouter(rune *store.Rune) http.Handler {
 	r := chi.NewRouter()
 
-	metrics.Init()
-
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
-	r.Use(metrics.MiddleWare)
+
+	m := metrics.New()
+	r.Use(m.MiddleWare)
 
 	h := NewHandler(rune)
 
