@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestSetAndGet(t *testing.T) {
+func TestSetAndGetandDelete(t *testing.T) {
 	rune := NewRune()
 
 	key := "aa"
@@ -35,5 +35,3 @@ func TestGetDoesNotAllowMutation(t *testing.T) {
 }
 
 func TestConcurrentSetGet(t *testing.T) {}
-
-func TestDelete(t *testing.T) {}
