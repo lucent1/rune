@@ -5,20 +5,28 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/lucent1/rune/internal/metrics"
 	"github.com/lucent1/rune/internal/store"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func NewRouter(rune *store.Rune) http.Handler {
 	r := chi.NewRouter()
 
+	metrics.Init()
+
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+	r.Use(metrics.MiddleWare)
 
 	h := NewHandler(rune)
 
-	r.Put("/key/{key}", h.Set)
+	r.Post("/key/{key}", h.Set)
 	r.Get("/key/{key}", h.Get)
 	r.Delete("/key/{key}", h.Delete)
+
+	// Prometheus metrics endpoint
+	r.Handle("/metrics", promhttp.Handler())
 
 	return r
 }
