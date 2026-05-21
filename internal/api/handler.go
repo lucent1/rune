@@ -1,11 +1,14 @@
 package api
 
 import (
-	"io"
 	"net/http"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/lucent1/rune/internal/store"
+)
+
+const (
+	maxKeySize   = 256
+	maxValueSize = 1_000_000
 )
 
 type Handler struct {
@@ -19,12 +22,15 @@ func NewHandler(rune *store.Rune) *Handler {
 }
 
 func (h *Handler) Set(w http.ResponseWriter, r *http.Request) {
-	const (
-		maxKeySize   = 256
-		maxValueSize = 1_000_000
-	)
+	r.Body = http.MaxBytesReader(w, r.Body, maxValueSize+maxKeySize+100)
 
-	key := chi.URLParam(r, "key")
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "invalid form or too large", http.StatusBadRequest)
+		return
+	}
+
+	key := r.PostForm.Get("key")
+	val := r.PostForm.Get("value")
 
 	if len(key) == 0 {
 		http.Error(w, "missing key", http.StatusBadRequest)
@@ -32,36 +38,46 @@ func (h *Handler) Set(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(key) > maxKeySize {
-		http.Error(w, "Key size exceeds 256 bytes", http.StatusBadRequest)
+		http.Error(w, "key too large", http.StatusBadRequest)
 		return
 	}
 
-	r.Body = http.MaxBytesReader(w, r.Body, maxValueSize)
-
-	val, err := io.ReadAll(r.Body)
-	if err != nil {
-		http.Error(w, "value too large or invalid body", http.StatusRequestEntityTooLarge)
+	if len(val) == 0 {
+		http.Error(w, "missing value", http.StatusBadRequest)
 		return
 	}
 
-	h.rune.Set(key, val)
+	if len(val) > maxValueSize {
+		http.Error(w, "value too large", http.StatusBadRequest)
+		return
+	}
+
+	h.rune.Set(key, []byte(val))
 
 	w.WriteHeader(http.StatusCreated)
 }
 
 func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
-	key := chi.URLParam(r, "key")
+	key := r.URL.Query().Get("key")
+
+	if key == "" {
+		http.Error(w, "missing key", http.StatusBadRequest)
+		return
+	}
+
 	if len(key) > 256 {
 		http.Error(w, "Key size exceeds 256 bytes", http.StatusBadRequest)
 		return
 	}
 
 	val := h.rune.Get(key)
+
+	w.Header().Set("Content-Type", "text/plain")
 	w.Write(val)
 }
 
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
-	key := chi.URLParam(r, "key")
+	key := r.URL.Query().Get("key")
 	if len(key) > 256 {
 		http.Error(w, "Key size exceeds 256 bytes", http.StatusBadRequest)
 		return

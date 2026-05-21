@@ -21,9 +21,9 @@ func NewRouter(rune *store.Rune) http.Handler {
 
 	h := NewHandler(rune)
 
-	r.Post("/key/{key}", h.Set)
-	r.Get("/key/{key}", h.Get)
-	r.Delete("/key/{key}", h.Delete)
+	r.Post("/set", h.Set)
+	r.Get("/get", h.Get)
+	r.Delete("/delete", h.Delete)
 
 	// Prometheus metrics endpoint
 	r.Handle("/metrics", promhttp.Handler())
