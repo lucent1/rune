@@ -1,11 +1,14 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"log"
 	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/lucent1/rune/internal/api"
 	"github.com/lucent1/rune/internal/config"
@@ -23,11 +26,36 @@ func main() {
 
 	addr := fmt.Sprintf(":%d", cfg.Port)
 
-	log.Printf("Server running on %s", addr)
+	server := &http.Server{
+		Addr:    addr,
+		Handler: router,
+	}
 
-	err := http.ListenAndServe(addr, router)
-	if err != nil {
-		log.Fatal(err)
+	go func() {
+		logger.Info("server starting", "addr", server.Addr)
+
+		if err := server.ListenAndServe(); err != nil &&
+			err != http.ErrServerClosed {
+
+			logger.Error("server crashed", "error", err)
+		}
+	}()
+
+	sigch := make(chan os.Signal, 1)
+	signal.Notify(sigch, syscall.SIGINT, syscall.SIGTERM)
+	defer signal.Stop(sigch)
+
+	sig := <-sigch
+
+	logger.Info("shutdown signal received", "signal", sig)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := server.Shutdown(ctx); err != nil {
+		logger.Error("graceful shutdown failed", "error", err)
+	} else {
+		logger.Info("server shutdown complete")
 	}
 }
 
