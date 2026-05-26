@@ -1,21 +1,27 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 
 	"github.com/lucent1/rune/internal/api"
+	"github.com/lucent1/rune/internal/config"
 	"github.com/lucent1/rune/internal/store"
 )
 
 func main() {
+	cfg := config.LoadConfig()
+
 	rune := store.NewRune()
 
-	router := api.NewRouter(rune)
+	router := api.NewRouter(rune, cfg)
 
-	log.Printf("Server running on: 8080")
+	addr := fmt.Sprintf(":%d", cfg.Port)
 
-	err := http.ListenAndServe(":8080", router)
+	log.Printf("Server running on %s", addr)
+
+	err := http.ListenAndServe(addr, router)
 	if err != nil {
 		log.Fatal(err)
 	}

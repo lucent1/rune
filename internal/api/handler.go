@@ -3,26 +3,24 @@ package api
 import (
 	"net/http"
 
+	"github.com/lucent1/rune/internal/config"
 	"github.com/lucent1/rune/internal/store"
-)
-
-const (
-	maxKeySize   = 256
-	maxValueSize = 1_000_000
 )
 
 type Handler struct {
 	rune *store.Rune
+	cfg  config.Config
 }
 
-func NewHandler(rune *store.Rune) *Handler {
+func NewHandler(rune *store.Rune, cfg config.Config) *Handler {
 	return &Handler{
 		rune: rune,
+		cfg:  cfg,
 	}
 }
 
 func (h *Handler) Set(w http.ResponseWriter, r *http.Request) {
-	r.Body = http.MaxBytesReader(w, r.Body, maxValueSize+maxKeySize+100)
+	r.Body = http.MaxBytesReader(w, r.Body, int64(h.cfg.MaxValueSize+h.cfg.MaxKeySize+100))
 
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "invalid form or too large", http.StatusBadRequest)
@@ -37,7 +35,7 @@ func (h *Handler) Set(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(key) > maxKeySize {
+	if len(key) > h.cfg.MaxKeySize {
 		http.Error(w, "key too large", http.StatusBadRequest)
 		return
 	}
@@ -47,7 +45,7 @@ func (h *Handler) Set(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(val) > maxValueSize {
+	if len(val) > h.cfg.MaxValueSize {
 		http.Error(w, "value too large", http.StatusBadRequest)
 		return
 	}
