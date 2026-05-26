@@ -1,6 +1,7 @@
 package api
 
 import (
+	"log/slog"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -11,7 +12,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-func NewRouter(rune *store.Rune, cfg config.Config) http.Handler {
+func NewRouter(rune *store.Rune, cfg config.Config, logger *slog.Logger) http.Handler {
 	r := chi.NewRouter()
 
 	r.Use(middleware.Logger)
@@ -20,7 +21,7 @@ func NewRouter(rune *store.Rune, cfg config.Config) http.Handler {
 	m := metrics.New()
 	r.Use(m.MiddleWare)
 
-	h := NewHandler(rune, cfg)
+	h := NewHandler(rune, cfg, logger)
 
 	r.Post("/set", h.Set)
 	r.Get("/get", h.Get)
