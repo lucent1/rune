@@ -18,9 +18,9 @@ func LoadConfig() Config {
 	cfg := Config{}
 
 	flag.IntVar(&cfg.Port, "port", 8080, "server port")
-	flag.IntVar(&cfg.MaxKeySize, "key size", 256, "maximum key size as bytes")
-	flag.IntVar(&cfg.MaxValueSize, "value size", 1048576, "maximum value size as bytes")
-	flag.StringVar(&cfg.LogLevel, "log level", "debug", "log level: debug/info/warn/error")
+	flag.IntVar(&cfg.MaxKeySize, "max-key-size", 256, "maximum key size as bytes")
+	flag.IntVar(&cfg.MaxValueSize, "max-value-size", 1048576, "maximum value size as bytes")
+	flag.StringVar(&cfg.LogLevel, "log-level", "debug", "log level: debug/info/warn/error")
 
 	flag.Parse()
 
