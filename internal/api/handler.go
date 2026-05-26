@@ -101,6 +101,11 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	val := h.rune.Get(key)
+	if len(val) == 0 {
+		h.logger.Warn("key not found", "key", key)
+		http.Error(w, "key not found", http.StatusNotFound)
+		return
+	}
 
 	h.logger.Info("key retrieved", "key", key, "valuesize", len(val))
 
@@ -117,7 +122,10 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.rune.Delete(key)
+	if !h.rune.Delete(key) {
+		h.logger.Warn("key not found", "key", key)
+		http.Error(w, "key not found", http.StatusNotFound)
+	}
 	h.logger.Info("key value deleted")
 	w.WriteHeader(http.StatusAccepted)
 }

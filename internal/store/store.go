@@ -23,9 +23,14 @@ func (r *Rune) Get(key string) []byte {
 	return cp
 }
 
-func (r *Rune) Delete(key string) {
+func (r *Rune) Delete(key string) bool {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	delete(r.data, key)
+	_, ok := r.data[key]
+	if ok {
+		delete(r.data, key)
+	}
+
+	return ok
 }
