@@ -1,6 +1,8 @@
 package store
 
 import (
+	"fmt"
+	"sync"
 	"testing"
 )
 
@@ -34,4 +36,31 @@ func TestGetDoesNotAllowMutation(t *testing.T) {
 	}
 }
 
-func TestConcurrentSetGet(t *testing.T) {}
+func TestConcurrentSetGet(t *testing.T) {
+	rune := NewRune()
+
+	const workers = 100
+
+	var wg sync.WaitGroup
+
+	for i := 0; i < workers; i++ {
+		wg.Add(1)
+
+		go func(i int) {
+			defer wg.Done()
+
+			key := fmt.Sprintf("key-%d", i)
+			value := []byte(fmt.Sprintf("value-%d", i))
+
+			rune.Set(key, value)
+
+			got := rune.Get(key)
+
+			if string(got) != string(value) {
+				t.Errorf("wrong value for %s", key)
+			}
+		}(i)
+	}
+
+	wg.Wait()
+}
