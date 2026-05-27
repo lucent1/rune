@@ -24,7 +24,7 @@ func main() {
 
 	rune := store.NewRune()
 
-	m := metrics.New(prometheus.NewRegistry())
+	m := metrics.New(prometheus.DefaultRegisterer)
 
 	router := api.NewRouter(rune, cfg, logger, m)
 
