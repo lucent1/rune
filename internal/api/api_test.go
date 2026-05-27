@@ -8,14 +8,17 @@ import (
 	"testing"
 
 	"github.com/lucent1/rune/internal/config"
+	"github.com/lucent1/rune/internal/metrics"
 	"github.com/lucent1/rune/internal/store"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 func TestHTTPSetAndGet(t *testing.T) {
 	rune := store.NewRune()
 	cfg := config.Config{MaxKeySize: 256, MaxValueSize: 1048576}
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
-	router := NewRouter(rune, cfg, logger)
+	m := metrics.New(prometheus.NewRegistry())
+	router := NewRouter(rune, cfg, logger, m)
 
 	server := httptest.NewServer(router)
 	defer server.Close()
@@ -50,7 +53,8 @@ func TestHTTPGetNotFound(t *testing.T) {
 	rune := store.NewRune()
 	cfg := config.Config{MaxKeySize: 256, MaxValueSize: 1048576}
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
-	router := NewRouter(rune, cfg, logger)
+	m := metrics.New(prometheus.NewRegistry())
+	router := NewRouter(rune, cfg, logger, m)
 
 	server := httptest.NewServer(router)
 	defer server.Close()

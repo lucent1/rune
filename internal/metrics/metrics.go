@@ -7,7 +7,7 @@ type Metrics struct {
 	RequestDuration *prometheus.HistogramVec
 }
 
-func New() *Metrics {
+func New(reg prometheus.Registerer) *Metrics {
 	m := &Metrics{
 		RequestTotal: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
@@ -27,7 +27,7 @@ func New() *Metrics {
 		),
 	}
 
-	prometheus.MustRegister(
+	reg.MustRegister(
 		m.RequestTotal,
 		m.RequestDuration,
 	)

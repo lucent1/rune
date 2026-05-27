@@ -12,7 +12,9 @@ import (
 
 	"github.com/lucent1/rune/internal/api"
 	"github.com/lucent1/rune/internal/config"
+	"github.com/lucent1/rune/internal/metrics"
 	"github.com/lucent1/rune/internal/store"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 func main() {
@@ -22,7 +24,9 @@ func main() {
 
 	rune := store.NewRune()
 
-	router := api.NewRouter(rune, cfg, logger)
+	m := metrics.New(prometheus.DefaultRegisterer)
+
+	router := api.NewRouter(rune, cfg, logger, m)
 
 	addr := fmt.Sprintf(":%d", cfg.Port)
 
