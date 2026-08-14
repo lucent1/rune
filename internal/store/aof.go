@@ -10,13 +10,31 @@ type AOF struct {
 	file *os.File
 }
 
-// func NewAOF(path string) (*AOF, error) {}
+func NewAOF(path string) (*AOF, error) {
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		return nil, err
+	}
 
-// func (a *AOF) WriteEntry(op byte, key string, value []byte) error {}
+	return &AOF{file: file}, err
+}
 
-// func (a *AOF) Sync() error {}
+func (a *AOF) WriteEntry(op byte, key string, value []byte) error {
+	data := encodeEntry(op, key, value)
+	_, err := a.file.Write(data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
 
-// func (a *AOF) Close() error {}
+func (a *AOF) Sync() error {
+	return a.file.Sync()
+}
+
+func (a *AOF) Close() error {
+	return a.file.Close()
+}
 
 func encodeEntry(op byte, key string, value []byte) []byte {
 	buf := make([]byte, 1+2+len(key)+4+len(value))

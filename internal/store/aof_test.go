@@ -1,6 +1,8 @@
 package store
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -128,4 +130,100 @@ func TestDecodeEntryValueLengthTooLarge(t *testing.T) {
 	if err == nil {
 		t.Error("value length larger than actual key, should return error")
 	}
+}
+
+func TestAOFWrite(t *testing.T) {
+	tmpDir := t.TempDir()
+	aofPath := filepath.Join(tmpDir, "test.aof")
+
+	aof, err := NewAOF(aofPath)
+	if err != nil {
+		t.Fatalf("unable to create new aof: %v", err)
+	}
+	defer aof.Close()
+
+	err = aof.WriteEntry(0x01, "tushig", []byte("1234"))
+	if err != nil {
+		t.Fatalf("unable to write entry: %v", err)
+	}
+
+	err = aof.Sync()
+	if err != nil {
+		t.Fatalf("unable to sync data: %v:", err)
+	}
+
+	//close now then read from disk
+	aof.Close()
+
+	data, err := os.ReadFile(aofPath)
+	if err != nil {
+		t.Fatalf("unable to read from disk: %v", err)
+	}
+
+	if len(data) == 0 || data[0] != 0x01 {
+		t.Fatalf("data not matching: expected first byte: 0x01, got : 0x%02x", data[0])
+	}
+}
+
+func TestAOFRecovery(t *testing.T) {
+	tmpDir := t.TempDir()
+	aofPath := filepath.Join(tmpDir, "test.aof")
+
+	aof, err := NewAOF(aofPath)
+	if err != nil {
+		t.Fatalf("unable to create new aof: %v", err)
+	}
+	defer aof.Close()
+
+	entries := []struct {
+		op    byte
+		key   string
+		value []byte
+	}{
+		{0x01, "w1", []byte("1234")},
+		{0x01, "w2", []byte("1234")},
+		{0x01, "w3", []byte("1234")},
+		{0x01, "w4", []byte("1234")},
+		{0x01, "w5", []byte("1234")},
+		{0x02, "d1", []byte("")}, // DELETE
+	}
+
+	for _, e := range entries {
+		err = aof.WriteEntry(e.op, e.key, e.value)
+		if err != nil {
+			t.Fatalf("unable to write entry: %v", err)
+		}
+	}
+
+	err = aof.Sync()
+	if err != nil {
+		t.Fatalf("unable to sync data: %v:", err)
+	}
+
+	aof.Close()
+
+	data, err := os.ReadFile(aofPath)
+	if err != nil {
+		t.Fatalf("unable to read file: %v", err)
+	}
+
+	offset := 0
+	for i, expected := range entries {
+		if offset >= len(data) {
+			t.Fatalf("ran out of data at entry: %d", i)
+		}
+
+		op, key, val, err := decodeEntry(data[offset:])
+		if err != nil {
+			t.Fatalf("failed to decode entry: %v", err)
+		}
+
+		if op != expected.op || key != expected.key {
+			t.Errorf("entry %d missmatch: got op=0x%02x key=%s, expected op=0x%02x key=%s", i, key, val, expected.key, expected.value)
+		}
+
+		entryBytes := encodeEntry(op, key, val)
+		offset += len(entryBytes)
+	}
+
 }
